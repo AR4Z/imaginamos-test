@@ -10,6 +10,10 @@ export class ClientsService {
         @InjectRepository(Client)
         private clientsRepository: Repository<Client>,
     ) { }
+    
+    async findByEmail(clientEmail: string): Promise<Client | null> {
+        return await this.clientsRepository.findOne({ email: clientEmail });
+    }
 
     async create(name: string, email: string, password: string): Promise<Client> {
         const client = this.clientsRepository.create({
