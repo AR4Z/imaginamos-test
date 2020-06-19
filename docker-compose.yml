@@ -1,0 +1,36 @@
+version: "3.7"
+services:
+  db:
+    container_name: db
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: 'imaginamos'
+      POSTGRES_DB: 'imaginamos'
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    #expose:
+    #  - 5432
+    ports:
+      - '5432:5432'
+    restart: always
+  
+  api:
+    container_name: api
+    image: api
+    build:
+      context: ./backend/
+      target: development
+    volumes:
+      - ./backend/:/src/app
+      - /usr/src/app/node_modules
+    command: npm run start:dev
+    ports:
+      - '4000:3000'
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+    
+volumes:
+  postgres:
