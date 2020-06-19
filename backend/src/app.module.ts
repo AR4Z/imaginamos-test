@@ -6,6 +6,9 @@ import { Client } from './clients/client.entity';
 import { Service } from './services/service.entity';
 import { Technician } from './technicians/technician.entity';
 import { ClientsModule } from './clients/clients.module';
+import { ServicesModule } from './services/services.module';
+import { AuthModule } from './auth/auth.module';
+import { RedisModule} from 'nestjs-redis'
 
 @Module({
   imports: [
@@ -19,7 +22,15 @@ import { ClientsModule } from './clients/clients.module';
       entities: [Client, Technician, Service],
       synchronize: true,
     }),
-    ClientsModule
+    RedisModule.register([
+      {
+        name:'tickets',
+        url: 'redis://:@127.0.0.1:6379/1',
+    },
+    ]),
+    ServicesModule,
+    ClientsModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
