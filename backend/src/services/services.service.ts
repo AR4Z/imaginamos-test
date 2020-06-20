@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Raw } from 'typeorm';
 import { Service } from './service.entity';
 import { Client } from 'src/clients/client.entity';
 import { Technician } from 'src/technicians/technician.entity';
@@ -28,11 +28,11 @@ export class ServicesService {
     }
 
     async updateWorkingDate(id: number) {
-        this.servicesRepository.update(id, {working_date: 'now()'})
+        await this.servicesRepository.query('UPDATE service set working_date=CURRENT_TIMESTAMP WHERE id = $1', [id]);
     }
 
     async updateCompletedDate(id: number) {
-        this.servicesRepository.update(id, {completed_date: 'now()'})
+        await this.servicesRepository.query('UPDATE service set completed_date=CURRENT_TIMESTAMP WHERE id = $1', [id]);
     }
 
 
