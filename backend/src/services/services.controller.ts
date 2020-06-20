@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Param, Inject } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get, Param, Inject, Put, Patch } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import * as jwt from 'jsonwebtoken';
 import * as sgMail from '@sendgrid/mail';
@@ -7,6 +7,7 @@ import { Ticket } from './Ticket';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RedisService } from 'nestjs-redis';
 import { Service } from './service.entity';
+import { UpdateServiceStatusDto } from './UpdateServiceStatusDto';
 
 @Controller('services')
 export class ServicesController {
@@ -68,6 +69,17 @@ export class ServicesController {
             }
         } catch {
             return null;
+        }
+    }
+
+    @Patch('status/:idService')
+    async updateService(@Body() updateServiceStatusDto: UpdateServiceStatusDto, @Param() params){
+        const status = updateServiceStatusDto.status;
+
+        if (status === 'working') {
+            this.servicesService.updateWorkingDate(params.idService);
+        } else {
+            this.servicesService.updateCompletedDate(params.idService);
         }
     }
 

@@ -27,5 +27,13 @@ export class ServicesService {
         return service;
     }
 
+    async updateWorkingDate(id: number) {
+        this.servicesRepository.update(id, {working_date: 'now()'})
+    }
+
+    async updateCompletedDate(id: number) {
+        this.servicesRepository.update(id, {completed_date: 'now()'})
+    }
+
 
 }
