@@ -22,5 +22,10 @@ export class ServicesService {
         return service;
     }
 
+    async findById(id: number): Promise<Service> {
+        const service = await this.servicesRepository.findOne({id: id});
+        return service;
+    }
+
 
 }

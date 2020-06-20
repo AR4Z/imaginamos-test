@@ -6,6 +6,7 @@ import { CreateTicketDto } from './CreateTicketDto';
 import { Ticket } from './Ticket';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RedisService } from 'nestjs-redis';
+import { Service } from './service.entity';
 
 @Controller('services')
 export class ServicesController {
@@ -45,9 +46,28 @@ export class ServicesController {
             const technician = await this.techniciansService.getOneRandom();
 
             redisClientTickets.del(params.tickeToken);
-            this.servicesService.create(ticket.type, client, technician);
+            const service: Service = await this.servicesService.create(ticket.type, client, technician);
+            const serviceToken = this.createServiceToken(service);
+            this.sendValidatedTicketMail(serviceToken, client.email);
         } else {
             //
+        }
+    }
+
+    @UseGuards(AuthGuard)
+    @Get('track/:serviceToken')
+    async service(@Param() params) {
+        try {
+            const payload = jwt.verify(params.serviceToken, 'imaginamos');
+            const service = await this.servicesService.findById(payload.id);
+
+            if (service) {
+                return {
+                    ...service
+                }
+            }
+        } catch {
+            return null;
         }
     }
 
@@ -71,6 +91,26 @@ export class ServicesController {
         }
     }
 
+    async sendValidatedTicketMail(serviceToken: string, email: string) {
+        sgMail.setApiKey('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');
+        const msg = {
+            to: email,
+            from: 'ohernandezn@unal.edu.co',
+            subject: 'Your service has been scheduled - Imaginamos Test',
+            html: `Hey! your service has been scheduled, you can it track follow the next link: <a href="http://localhost:3000/services/track/${serviceToken}">Track</a>`
+        };
+
+        try {
+            await sgMail.send(msg);
+        } catch (error) {
+            console.error(error);
+            if (error.response) {
+                console.error(error.response.body)
+            }
+        }
+    }
+
+
     createTicketToken(ticket: Ticket) {
         const ticketToken = jwt.sign(
             {
@@ -80,5 +120,16 @@ export class ServicesController {
         );
 
         return ticketToken;
+    }
+
+    createServiceToken(service: Service) {
+        const serviceToken = jwt.sign(
+            {
+                ...service
+            },
+            'imaginamos',
+        );
+
+        return serviceToken;
     }
 }
