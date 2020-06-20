@@ -9,6 +9,7 @@ import { ClientsModule } from './clients/clients.module';
 import { ServicesModule } from './services/services.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule} from 'nestjs-redis'
+import { TechniciansModule } from './technicians/technicians.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { RedisModule} from 'nestjs-redis'
     ]),
     ServicesModule,
     ClientsModule,
+    TechniciansModule,
     AuthModule,
   ],
   controllers: [AppController],

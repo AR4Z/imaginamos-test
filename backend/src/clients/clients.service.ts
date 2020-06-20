@@ -11,6 +11,10 @@ export class ClientsService {
         private clientsRepository: Repository<Client>,
     ) { }
     
+    async findById(clientId: number): Promise<Client | null> {
+        return await this.clientsRepository.findOne({id: clientId});
+    }
+
     async findByEmail(clientEmail: string): Promise<Client | null> {
         return await this.clientsRepository.findOne({ email: clientEmail });
     }
