@@ -35,5 +35,9 @@ export class ServicesService {
         await this.servicesRepository.query('UPDATE service set completed_date=CURRENT_TIMESTAMP WHERE id = $1', [id]);
     }
 
-
+    async updateRating(id: number, rating: number) {
+        const service = await this.servicesRepository.findOne(id);
+        service.rating = rating;
+        await this.servicesRepository.save(service);
+    }
 }

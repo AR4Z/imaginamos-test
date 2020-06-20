@@ -8,6 +8,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { RedisService } from 'nestjs-redis';
 import { Service } from './service.entity';
 import { UpdateServiceStatusDto } from './UpdateServiceStatusDto';
+import { RateServiceDto } from './RateServiceDto';
 
 @Controller('services')
 export class ServicesController {
@@ -83,6 +84,12 @@ export class ServicesController {
         }
     }
 
+    @Patch('rate/:idService')
+    async rateService(@Body() rateServiceDto: RateServiceDto, @Param() params) {
+        const rating = rateServiceDto.rating;
+        this.servicesService.updateRating(params.idService, rating);
+    }
+
     async sendVerificationMail(ticketToken: string, email: string) {
         sgMail.setApiKey('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');
         const msg = {
@@ -143,5 +150,16 @@ export class ServicesController {
         );
 
         return serviceToken;
+    }
+
+    createRatingServiceToken(service: Service) {
+        const ratingServiceToken = jwt.sign(
+            {
+                ...service
+            },
+            'imaginamos',
+        );
+
+        return ratingServiceToken;
     }
 }
