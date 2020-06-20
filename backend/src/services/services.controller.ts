@@ -1,14 +1,14 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Param, Inject, Put, Patch } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get, Param, Inject, Patch, HttpException, HttpStatus, Res } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import * as jwt from 'jsonwebtoken';
-import * as sgMail from '@sendgrid/mail';
 import { CreateTicketDto } from './CreateTicketDto';
-import { Ticket } from './Ticket';
+import { Ticket } from '../interfaces/ticket.interface';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RedisService } from 'nestjs-redis';
 import { Service } from './service.entity';
 import { UpdateServiceStatusDto } from './UpdateServiceStatusDto';
 import { RateServiceDto } from './RateServiceDto';
+import sendEmail from 'src/utils/sendEmail';
 
 @Controller('services')
 export class ServicesController {
@@ -21,23 +21,40 @@ export class ServicesController {
         private readonly redisService: RedisService,
     ) { }
 
+    // Create ticket
     @UseGuards(AuthGuard)
     @Post('ticket')
-    createTicket(@Body() createTicketDto: CreateTicketDto, @Req() req): void {
+    async createTicket(@Body() createTicketDto: CreateTicketDto, @Req() req): Promise<Object> {
         const ticket = {
             userId: req.user.id,
             type: createTicketDto.type
         }
-        const ticketToken = this.createTicketToken(ticket)
+        const ticketToken = jwt.sign(
+            {
+                ...ticket
+            },
+            'imaginamos',
+        );
         const redisClientTickets = this.redisService.getClient('tickets');
 
         redisClientTickets.set(ticketToken, JSON.stringify(ticket), 'ex', 900);
-        this.sendVerificationMail(ticketToken, req.user.email);
+        const messageVerification = {
+            to: req.user.email,
+            from: 'ohernandezn@unal.edu.co',
+            subject: 'Verify your identity - Imaginamos Test',
+            html: `Verify your identity for schedule your service: <a href="http://localhost:3000/services/ticket/verify/${ticketToken}">Verify</a>`
+        };
+
+        await sendEmail(messageVerification);
+        return {
+            message: 'A ticket has been created, to schedule the service check your email and you can validate your identity.'
+        }
     }
 
+    // Verify the identity of the customer who created the ticket and schedule the service
     @UseGuards(AuthGuard)
     @Get('ticket/verify/:ticketToken')
-    async verifyTicketRequest(@Param() params) {
+    async verifyTicketRequest(@Param() params): Promise<Object> {
         const redisClientTickets = this.redisService.getClient('tickets');
         const exists = await redisClientTickets.exists(params.ticketToken);
 
@@ -49,117 +66,87 @@ export class ServicesController {
 
             redisClientTickets.del(params.tickeToken);
             const service: Service = await this.servicesService.create(ticket.type, client, technician);
-            const serviceToken = this.createServiceToken(service);
-            this.sendValidatedTicketMail(serviceToken, client.email);
+            const serviceToken = jwt.sign(
+                {
+                    ...service
+                },
+                'imaginamos',
+            );
+            const msgValidatedTicket = {
+                to: client.email,
+                from: 'ohernandezn@unal.edu.co',
+                subject: 'Your service has been scheduled - Imaginamos Test',
+                html: `Hey! your service has been scheduled, you can it track follow the next link: <a href="http://localhost:3000/services/track/${serviceToken}">Track</a>`
+            };
+            await sendEmail(msgValidatedTicket);
+
+            return {
+                message: 'A link has been sent to your email with which you can track your service.'
+            }
         } else {
-            //
+            throw new HttpException('Error with ticket token, maybe it is expired.', HttpStatus.NOT_FOUND);
         }
     }
 
+    // allow tracks the  service by the client using a token
     @UseGuards(AuthGuard)
     @Get('track/:serviceToken')
-    async service(@Param() params) {
+    async service(@Param() params, @Req() req, @Res() res): Promise<Object> {
         try {
-            const payload = jwt.verify(params.serviceToken, 'imaginamos');
+            const payload = await jwt.verify(params.serviceToken, 'imaginamos');
             const service = await this.servicesService.findById(payload.id);
 
             if (service) {
-                return {
-                    ...service
+                if (req.user.id === service.client.id) {
+                    return {
+                        ...service
+                    }
+                } else {
+                    res.status(HttpStatus.FORBIDDEN).send({
+                        message: 'That service is not yours.'
+                    });
                 }
+            } else {
+                res.status(HttpStatus.NOT_FOUND).send({
+                    message: 'Service has not been found.'
+                });
             }
         } catch {
-            return null;
+            res.status(HttpStatus.BAD_REQUEST).send({
+                message: 'A problem probably occurred with the token.'
+            });
         }
     }
 
+    // Allow change the service status by the technician that was assigned
+    @UseGuards(AuthGuard)
     @Patch('status/:idService')
-    async updateService(@Body() updateServiceStatusDto: UpdateServiceStatusDto, @Param() params){
+    async updateService(@Body() updateServiceStatusDto: UpdateServiceStatusDto, @Param() params) {
         const status = updateServiceStatusDto.status;
+        const service = await this.servicesService.findById(params.idService);
 
-        if (status === 'working') {
-            this.servicesService.updateWorkingDate(params.idService);
+        if (service) {
+            if (status === 'working') {
+                this.servicesService.updateWorkingDate(params.idService);
+            } else {
+                this.servicesService.updateCompletedDate(params.idService);
+            }
         } else {
-            this.servicesService.updateCompletedDate(params.idService);
+            throw new HttpException('Service doens\'t exists.', HttpStatus.NOT_FOUND);
         }
     }
 
+    // Allow rating the service by the user
+    @UseGuards(AuthGuard)
     @Patch('rate/:idService')
     async rateService(@Body() rateServiceDto: RateServiceDto, @Param() params) {
         const rating = rateServiceDto.rating;
-        this.servicesService.updateRating(params.idService, rating);
-    }
+        const service = await this.servicesService.findById(params.idService);
 
-    async sendVerificationMail(ticketToken: string, email: string) {
-        sgMail.setApiKey('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');
-        const msg = {
-            to: email,
-            from: 'ohernandezn@unal.edu.co',
-            subject: 'Verify your identity - Imaginamos Test',
-            html: `Verify your identity for schedule your service: <a href="http://localhost:3000/services/ticket/verify/${ticketToken}">Verify</a>`
-        };
-
-        try {
-            await sgMail.send(msg);
-        } catch (error) {
-            console.error(error);
-
-            if (error.response) {
-                console.error(error.response.body)
-            }
+        if (service) {
+            this.servicesService.updateRating(params.idService, rating);
+        } else {
+            throw new HttpException('Service doens\'t exists.', HttpStatus.NOT_FOUND);
         }
-    }
-
-    async sendValidatedTicketMail(serviceToken: string, email: string) {
-        sgMail.setApiKey('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');
-        const msg = {
-            to: email,
-            from: 'ohernandezn@unal.edu.co',
-            subject: 'Your service has been scheduled - Imaginamos Test',
-            html: `Hey! your service has been scheduled, you can it track follow the next link: <a href="http://localhost:3000/services/track/${serviceToken}">Track</a>`
-        };
-
-        try {
-            await sgMail.send(msg);
-        } catch (error) {
-            console.error(error);
-            if (error.response) {
-                console.error(error.response.body)
-            }
-        }
-    }
-
-
-    createTicketToken(ticket: Ticket) {
-        const ticketToken = jwt.sign(
-            {
-                ...ticket
-            },
-            'imaginamos',
-        );
-
-        return ticketToken;
-    }
-
-    createServiceToken(service: Service) {
-        const serviceToken = jwt.sign(
-            {
-                ...service
-            },
-            'imaginamos',
-        );
-
-        return serviceToken;
-    }
-
-    createRatingServiceToken(service: Service) {
-        const ratingServiceToken = jwt.sign(
-            {
-                ...service
-            },
-            'imaginamos',
-        );
-
-        return ratingServiceToken;
     }
 }

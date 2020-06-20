@@ -9,7 +9,8 @@ export class TechniciansService {
         @InjectRepository(Technician)
         private techniciansRepository: Repository<Technician>,
     ) { }
-
+    
+    // create a technician
     async create(name: string, email: string, password: string): Promise<Technician> {
         const technician = this.techniciansRepository.create({
             name: name,
@@ -20,8 +21,15 @@ export class TechniciansService {
         return technician;
     }
 
+    // get a random technician
     async getOneRandom(): Promise<Technician> {
         const technician  = await this.techniciansRepository.query('select * from technician order by random() limit 1');
         return technician[0];
+    }
+
+    // get a technician by its email
+    async findByEmail(email: string): Promise<Technician | null> {
+        const technician = await this.techniciansRepository.findOne({email: email});
+        return technician;
     }
 }
