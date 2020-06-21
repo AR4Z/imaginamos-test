@@ -55,7 +55,7 @@ export class ClientsController {
                 name: client.name,
                 role: 'client'
             },
-            'imaginamos',
+            process.env.JWT_SECRET,
         );
 
         return {

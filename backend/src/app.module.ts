@@ -8,35 +8,37 @@ import { Technician } from './technicians/technician.entity';
 import { ClientsModule } from './clients/clients.module';
 import { ServicesModule } from './services/services.module';
 import { AuthModule } from './auth/auth.module';
-import { RedisModule} from 'nestjs-redis'
+import { RedisModule } from 'nestjs-redis'
 import { TechniciansModule } from './technicians/technicians.module';
-import { CommandModule, Command } from 'nestjs-command';
+import { CommandModule } from 'nestjs-command';
+require('dotenv').config()
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'imaginamos',
-      database: 'imaginamos',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT),
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE,
       entities: [Client, Technician, Service],
       synchronize: true,
     }),
-    RedisModule.register([
-      {
-        name:'tickets',
-        url: 'redis://:@127.0.0.1:6379/1',
-      },
+    RedisModule.register([{
+      name: 'tickets',
+      host: process.env.REDIS_HOST,
+      port: parseInt(process.env.REDIS_PORT),
+      db: parseInt(process.env.REDIS_DB)
+    },
     ]),
     ServicesModule,
     ClientsModule,
     TechniciansModule,
     AuthModule,
-    CommandModule
+    CommandModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

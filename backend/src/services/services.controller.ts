@@ -36,14 +36,14 @@ export class ServicesController {
             {
                 ...ticket
             },
-            'imaginamos',
+            process.env.JWT_SECRET,
         );
         const redisClientTickets = this.redisService.getClient('tickets');
 
         redisClientTickets.set(ticketToken, JSON.stringify(ticket), 'ex', 900);
         const messageVerification = {
             to: req.user.email,
-            from: 'ohernandezn@unal.edu.co',
+            from: process.env.SENDER_EMAIL,
             subject: 'Verify your identity - Imaginamos Test',
             html: `Verify your identity for schedule your service: <a href="http://localhost:3000/services/ticket/verify/${ticketToken}">Verify</a>`
         };
@@ -77,7 +77,7 @@ export class ServicesController {
                 {
                     ...service
                 },
-                'imaginamos',
+                process.env.JWT_SECRET,
             );
             const msgValidatedTicket = {
                 to: client.email,
@@ -106,7 +106,7 @@ export class ServicesController {
     @ApiResponse({ status: 400, description: 'A problem probably occurred with the token.'})
     async service(@Param() params, @Req() req, @Res() res): Promise<Object> {
         try {
-            const payload = await jwt.verify(params.serviceToken, 'imaginamos');
+            const payload = await jwt.verify(params.serviceToken, process.env.JWT_SECRET);
             const service = await this.servicesService.findById(payload.id);
 
             if (service) {

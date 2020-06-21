@@ -55,7 +55,7 @@ export class TechniciansController {
                 name: technician.name,
                 role: 'technician'
             },
-            'imaginamos',
+            process.env.JWT_SECRET,
         );
 
         return {
