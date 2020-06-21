@@ -10,6 +10,7 @@ import { ServicesModule } from './services/services.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule} from 'nestjs-redis'
 import { TechniciansModule } from './technicians/technicians.module';
+import { CommandModule, Command } from 'nestjs-command';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { TechniciansModule } from './technicians/technicians.module';
     ClientsModule,
     TechniciansModule,
     AuthModule,
+    CommandModule
   ],
   controllers: [AppController],
   providers: [AppService],

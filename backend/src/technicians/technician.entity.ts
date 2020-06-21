@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany, BeforeInsert } from 'typeorm';
-import { Service } from 'src/services/service.entity';
+import { Service } from '../services/service.entity';
 import * as bcrypt from 'bcrypt';
 
 @Entity()

@@ -31,6 +31,7 @@
     "class-transformer": "^0.2.3",
     "class-validator": "^0.12.2",
     "jsonwebtoken": "^8.5.1",
+    "nestjs-command": "^1.4.0",
     "nestjs-redis": "^1.2.8",
     "pg": "^8.2.1",
     "reflect-metadata": "^0.1.13",

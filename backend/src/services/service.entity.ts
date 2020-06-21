@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, BeforeInsert } from 'typeorm';
-import { Client } from 'src/clients/client.entity';
-import { Technician } from 'src/technicians/technician.entity';
+import { Client } from '../clients/client.entity';
+import { Technician } from '../technicians/technician.entity';
 
 @Entity()
 export class Service {
