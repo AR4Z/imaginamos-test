@@ -18,10 +18,10 @@ export class AuthGuard implements CanActivate {
     const clientPaths = [
       '/services/ticket',
       '/services/ticket/verify/:ticketToken',
-      '/services/rate/:idService',
+      '/services/:idService/rate',
     ];
     const technicianPaths = [
-      '/services/status/:dService'
+      '/services/:idService/status'
     ];
 
     try {
@@ -30,13 +30,13 @@ export class AuthGuard implements CanActivate {
       let user;
 
       if (role === 'technician') {
-        if (path in clientPaths) {
+        if (clientPaths.includes(path)) {
           return false;
         }
 
         user = await this.techniciansService.findByEmail(payload.email);
       } else if (role == 'client') {
-        if (path in technicianPaths) {
+        if (technicianPaths.includes(path)) {
           return false;
         }
 
@@ -54,6 +54,5 @@ export class AuthGuard implements CanActivate {
     } catch {
       return false;
     }
-    return false;
   }
 }

@@ -1,9 +1,10 @@
 import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { TechniciansService } from './technicians.service';
-import { CreateTechnicianDto } from './CreateTechnicianDto';
+import { CreateTechnicianDto } from './dto/create-technician.dto';
 import { Technician } from './technician.entity';
 import * as jwt from 'jsonwebtoken';
-import { LoginTechnicianDto } from './LoginTechnicianDto';
+import { LoginTechnicianDto } from './dto/login-technician.dto';
+import { ApiResponse } from '@nestjs/swagger';
 
 @Controller('technicians')
 export class TechniciansController {
@@ -12,6 +13,8 @@ export class TechniciansController {
     ) { }
 
     @Post()
+    @ApiResponse({ status: 201, description: 'The technician has been successfully created.'})
+    @ApiResponse({ status: 409, description: 'A technician with that email has already been registered.'})
     async signUp(@Body() createTechnicianDto: CreateTechnicianDto): Promise<Technician | Object> {
         const technician = await this.techniciansService.findByEmail(createTechnicianDto.email);
 
@@ -26,6 +29,8 @@ export class TechniciansController {
     }
 
     @Post('login')
+    @ApiResponse({ status: 201, description: 'The technician logs in successfully, you get a token with which you can consume resources such as change service status or get your assigned services.'})
+    @ApiResponse({ status: 401, description: 'Email or password is wrong or there is not exist a technician with that email.'})
     async login(@Body() loginTechnicianDto: LoginTechnicianDto): Promise<Object> {
         const technician = await this.techniciansService.findByEmail(loginTechnicianDto.email);
     

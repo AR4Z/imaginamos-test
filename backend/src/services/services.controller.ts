@@ -1,14 +1,15 @@
 import { Controller, Post, Body, UseGuards, Req, Get, Param, Inject, Patch, HttpException, HttpStatus, Res } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import * as jwt from 'jsonwebtoken';
-import { CreateTicketDto } from './CreateTicketDto';
+import { CreateTicketDto } from './dto/create-ticket.dto';
 import { Ticket } from '../interfaces/ticket.interface';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { RedisService } from 'nestjs-redis';
 import { Service } from './service.entity';
-import { UpdateServiceStatusDto } from './UpdateServiceStatusDto';
-import { RateServiceDto } from './RateServiceDto';
+import { UpdateServiceStatusDto } from './dto/update-service-status.dto';
+import { RateServiceDto } from './dto/rate-service.dto';
 import sendEmail from 'src/utils/sendEmail';
+import { ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 
 @Controller('services')
 export class ServicesController {
@@ -24,6 +25,8 @@ export class ServicesController {
     // Create ticket
     @UseGuards(AuthGuard)
     @Post('ticket')
+    @ApiBearerAuth()
+    @ApiResponse({ status: 201, description: 'The ticket has been successfully created. Check your email.'})
     async createTicket(@Body() createTicketDto: CreateTicketDto, @Req() req): Promise<Object> {
         const ticket = {
             userId: req.user.id,
@@ -54,6 +57,10 @@ export class ServicesController {
     // Verify the identity of the customer who created the ticket and schedule the service
     @UseGuards(AuthGuard)
     @Get('ticket/verify/:ticketToken')
+    @ApiBearerAuth()
+    @ApiParam({name: 'ticketToken', description: 'The token that was received in the email after the ticket was created'})
+    @ApiResponse({ status: 200, description: 'The identity was verified and the service was created. Check your email.'})
+    @ApiResponse({ status: 404, description: 'Error with ticket token, maybe it is expired.'})
     async verifyTicketRequest(@Param() params): Promise<Object> {
         const redisClientTickets = this.redisService.getClient('tickets');
         const exists = await redisClientTickets.exists(params.ticketToken);
@@ -91,6 +98,12 @@ export class ServicesController {
     // allow tracks the  service by the client using a token
     @UseGuards(AuthGuard)
     @Get('track/:serviceToken')
+    @ApiBearerAuth()
+    @ApiParam({name: 'serviceToken', description: 'The token that was received in the email after the service was created'})
+    @ApiResponse({ status: 200, description: 'You received the status of the service.'})
+    @ApiResponse({ status: 403, description: 'That service is not yours.'})
+    @ApiResponse({ status: 404, description: 'Service has not been found.'})
+    @ApiResponse({ status: 400, description: 'A problem probably occurred with the token.'})
     async service(@Param() params, @Req() req, @Res() res): Promise<Object> {
         try {
             const payload = await jwt.verify(params.serviceToken, 'imaginamos');
@@ -120,7 +133,11 @@ export class ServicesController {
 
     // Allow change the service status by the technician that was assigned
     @UseGuards(AuthGuard)
-    @Patch('status/:idService')
+    @Patch(':idService/status')
+    @ApiBearerAuth()
+    @ApiParam({name: 'idService', description: 'The id of the service that the technician wants to change the status.'})
+    @ApiResponse({ status: 200, description: 'You updated the service status.'})
+    @ApiResponse({ status: 404, description: 'The service has not been found.'})
     async updateService(@Body() updateServiceStatusDto: UpdateServiceStatusDto, @Param() params) {
         const status = updateServiceStatusDto.status;
         const service = await this.servicesService.findById(params.idService);
@@ -138,7 +155,11 @@ export class ServicesController {
 
     // Allow rating the service by the user
     @UseGuards(AuthGuard)
-    @Patch('rate/:idService')
+    @Patch(':idService/rate')
+    @ApiBearerAuth()
+    @ApiParam({name: 'idService', description: 'The id of the service that the customer wants to change the rate.'})
+    @ApiResponse({ status: 200, description: 'You updated the service rating.'})
+    @ApiResponse({ status: 404, description: 'The service has not been found.'})
     async rateService(@Body() rateServiceDto: RateServiceDto, @Param() params) {
         const rating = rateServiceDto.rating;
         const service = await this.servicesService.findById(params.idService);

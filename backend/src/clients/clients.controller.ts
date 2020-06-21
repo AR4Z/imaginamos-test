@@ -1,9 +1,10 @@
 import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/common';
 import { ClientsService } from './clients.service';
-import { CreateClientDto } from './CreateUserDto';
-import { LoginClientDto } from './LoginClientDto';
+import { CreateClientDto } from './dto/create-client.dto';
+import { LoginClientDto } from './dto/login-client.dto';
 import { Client } from './client.entity';
 import * as jwt from 'jsonwebtoken';
+import { ApiResponse } from '@nestjs/swagger';
 
 @Controller('clients')
 export class ClientsController {
@@ -12,6 +13,8 @@ export class ClientsController {
     ) { }
 
     @Post()
+    @ApiResponse({ status: 201, description: 'The client has been successfully created.'})
+    @ApiResponse({ status: 409, description: 'A client with that email has already been registered.'})
     async signUp(@Body() createClientDto: CreateClientDto): Promise<Client | Object> {
         const client = await this.clientsService.findByEmail(createClientDto.email);
 
@@ -26,6 +29,8 @@ export class ClientsController {
     }
 
     @Post('login')
+    @ApiResponse({ status: 201, description: 'The client logs in successfully, you get a token with which you can consume resources such as create tickets or check the status of services.'})
+    @ApiResponse({ status: 401, description: 'Email or password is wrong or there is not exist a client with that email.'})
     async login(@Body() loginClientDto: LoginClientDto): Promise<Object> {
         const client = await this.clientsService.findByEmail(loginClientDto.email);
 
