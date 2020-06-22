@@ -17,8 +17,7 @@ export class TechniciansService {
             email: email,
             password: password,
         });
-        await this.techniciansRepository.save(technician);
-        return technician;
+        return await this.techniciansRepository.save(technician);
     }
 
     // get a random technician

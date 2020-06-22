@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany, BeforeInsert } from 'typeorm';
 import { Service } from '../services/service.entity';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Entity()
 export class Technician {
@@ -20,11 +20,11 @@ export class Technician {
   services: Service[];
 
   @BeforeInsert()
-  async hashPassword() {
-    this.password = await bcrypt.hash(this.password, 10);
+  hashPassword() {
+    this.password = bcrypt.hashSync(this.password, 10);
   }
 
   async comparePassword(attempt: string, password: string): Promise<boolean> {
-    return await bcrypt.compare(attempt, password);
+    return await bcrypt.compareSync(attempt, password);
   }
 }

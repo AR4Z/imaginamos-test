@@ -20,21 +20,26 @@ services:
     image: api
     build:
       context: ./backend/
-      target: development
     volumes:
       - ./backend/:/src/app
       - /usr/src/app/node_modules
     command: npm run start:dev
     ports:
-      - '4000:3000'
+      - '3000:3000'
     env_file:
       - ./backend/.env
+    links:
+      - db
+      - redis
     depends_on:
       - db
+      - redis
   
   redis:
     container_name: redis
     image: redis:alpine
+    #expose:
+    #  - 6379
     ports: 
       - '6379:6379'
 

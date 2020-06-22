@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from './client.entity';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ClientsService {
@@ -25,8 +26,7 @@ export class ClientsService {
             email: email,
             password: password,
         });
-        await this.clientsRepository.save(client);
-        return client;
+        return await this.clientsRepository.save(client);
     }
 
     async getPassword(id: number): Promise<string> {

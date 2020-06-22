@@ -30,7 +30,8 @@ export class AuthGuard implements CanActivate {
       '/services/:idService/rate',
     ];
     const technicianPaths = [
-      '/services/:idService/status'
+      '/services/:idService/status',
+      '/services'
     ];
 
     try {
