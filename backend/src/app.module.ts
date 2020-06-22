@@ -24,6 +24,7 @@ require('dotenv').config()
       database: process.env.DB_DATABASE,
       entities: [Client, Technician, Service],
       synchronize: true,
+      logging: true
     }),
     RedisModule.register([{
       name: 'tickets',

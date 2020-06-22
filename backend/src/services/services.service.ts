@@ -25,7 +25,7 @@ export class ServicesService {
 
     // find a service by id
     async findById(id: number): Promise<Service> {
-        const service = await this.servicesRepository.findOne({id: id});
+        const service = await this.servicesRepository.findOne({ id: id });
         console.log(service);
         return service;
     }
@@ -45,5 +45,22 @@ export class ServicesService {
         const service = await this.servicesRepository.findOne(id);
         service.rating = rating;
         await this.servicesRepository.save(service);
+    }
+
+    async findAll(filters): Promise<Service[]> {
+        let query = this.servicesRepository.createQueryBuilder('service')
+            .innerJoinAndSelect('service.technician', 'technician')
+            .where('technician.id = :technicianId', filters)
+
+        if (filters.status === 'waiting') {
+            query = query.andWhere('service.working_date IS NULL');
+        } else if (filters.status === 'working') {
+            query = query.andWhere('service.working_date IS NOT NULL and service.completed_date IS NULL');
+        } else if (filters.status === 'completed') {
+            query = query.andWhere('service.completed_date IS NOT NULL');
+        }
+
+        const services = await query.getMany();
+        return services;
     }
 }

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Param, Inject, Patch, HttpException, HttpStatus, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get, Param, Inject, Patch, HttpException, HttpStatus, Res, Query } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import * as jwt from 'jsonwebtoken';
 import { CreateTicketDto } from './dto/create-ticket.dto';
@@ -9,7 +9,14 @@ import { Service } from './service.entity';
 import { UpdateServiceStatusDto } from './dto/update-service-status.dto';
 import { RateServiceDto } from './dto/rate-service.dto';
 import sendEmail from 'src/utils/sendEmail';
-import { ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+
+
+enum ServiceStatus {
+    Waiting = 'waiting', // assigned but the technician has not been started his work
+    Working = 'working', // the assigned technician is working on it
+    Completed = 'completed', // the assigned technician has been completed his work
+  }
 
 @Controller('services')
 export class ServicesController {
@@ -82,7 +89,7 @@ export class ServicesController {
             );
             const msgValidatedTicket = {
                 to: client.email,
-                from: 'ohernandezn@unal.edu.co',
+                from: process.env.SENDER_EMAIL,
                 subject: 'Your service has been scheduled - Imaginamos Test',
                 html: `Hey! your service has been scheduled, you can it track follow the next link: <a href="http://localhost:3000/services/track/${serviceToken}">Track</a>`
             };
@@ -130,6 +137,23 @@ export class ServicesController {
                 message: 'A problem probably occurred with the token.'
             });
         }
+    }
+
+    // allow that a technician receive his services
+    @UseGuards(AuthGuard)
+    @Get()
+    @ApiBearerAuth()
+    @ApiQuery({name: 'status', enum: ServiceStatus, required: false})
+    @ApiResponse({ status: 200, description: 'You received the services succeeded'})
+    async getServices(@Req() req, @Query() query): Promise<Object> {
+        const { status } = query;
+        const filters = {
+            'technicianId': parseInt(req.user.id),
+            'status': status
+        };
+
+        const services = await this.servicesService.findAll(filters);
+        return services;
     }
 
     // Allow change the service status by the technician that was assigned
