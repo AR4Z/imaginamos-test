@@ -13,7 +13,7 @@ export class Client {
   @Column()
   email: string;
 
-  @Column()
+  @Column({ select: false })
   password: string;
 
   @OneToMany(type => Service, service => service.client)
@@ -24,7 +24,7 @@ export class Client {
     this.password = await bcrypt.hash(this.password, 10);
   }
 
-  async comparePassword(attempt: string): Promise<boolean> {
-    return await bcrypt.compare(attempt, this.password);
+  async comparePassword(attempt: string, password: string): Promise<boolean> {
+    return await bcrypt.compare(attempt, password);
   }
 }

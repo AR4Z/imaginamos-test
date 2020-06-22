@@ -21,9 +21,11 @@ export class ClientsController {
         if (client) {
             throw new HttpException('A client with that email has already been registered', HttpStatus.CONFLICT);
         } else {
-            const newClient = await this.clientsService.create(createClientDto.name,
+            await this.clientsService.create(createClientDto.name,
                 createClientDto.email,
                 createClientDto.password);
+
+            const newClient = await this.clientsService.findByEmail(createClientDto.email); 
             return newClient;
         }
     }
@@ -35,7 +37,8 @@ export class ClientsController {
         const client = await this.clientsService.findByEmail(loginClientDto.email);
 
         if (client) {
-            const isValidPassword = await client.comparePassword(loginClientDto.password);
+            const password = await this.clientsService.getPassword(client.id);
+            const isValidPassword = await client.comparePassword(loginClientDto.password, password);
 
             if(isValidPassword) {
                 return this.createToken(client);

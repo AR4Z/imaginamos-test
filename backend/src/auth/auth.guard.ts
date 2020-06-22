@@ -13,7 +13,16 @@ export class AuthGuard implements CanActivate {
     context: ExecutionContext,
   ) {
     const request = context.switchToHttp().getRequest();
-    const jwtToken = request.headers.authorization;
+    let token = request.headers.authorization;
+    
+    // only accept Bearer auth
+    if (token && token.startsWith('Bearer ')) {
+      token = token.slice(7, token.length).trimLeft();
+    } else {
+      console.log('not bearer')
+      return false;
+    }
+
     const path = request.route.path;
     const clientPaths = [
       '/services/ticket',
@@ -25,7 +34,7 @@ export class AuthGuard implements CanActivate {
     ];
 
     try {
-      const payload = jwt.verify(jwtToken, 'imaginamos');
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
       const role = payload.role;
       let user;
 

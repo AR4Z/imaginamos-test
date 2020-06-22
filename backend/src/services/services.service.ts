@@ -26,6 +26,7 @@ export class ServicesService {
     // find a service by id
     async findById(id: number): Promise<Service> {
         const service = await this.servicesRepository.findOne({id: id});
+        console.log(service);
         return service;
     }
 

@@ -75,7 +75,8 @@ export class ServicesController {
             const service: Service = await this.servicesService.create(ticket.type, client, technician);
             const serviceToken = jwt.sign(
                 {
-                    ...service
+                    service_id: service.id,
+                    client_id: service.client.id
                 },
                 process.env.JWT_SECRET,
             );
@@ -104,16 +105,16 @@ export class ServicesController {
     @ApiResponse({ status: 403, description: 'That service is not yours.'})
     @ApiResponse({ status: 404, description: 'Service has not been found.'})
     @ApiResponse({ status: 400, description: 'A problem probably occurred with the token.'})
-    async service(@Param() params, @Req() req, @Res() res): Promise<Object> {
+    async service(@Param() params, @Req() req, @Res() res): Promise<void> {
         try {
-            const payload = await jwt.verify(params.serviceToken, process.env.JWT_SECRET);
-            const service = await this.servicesService.findById(payload.id);
+            let payload = jwt.verify(params.serviceToken, process.env.JWT_SECRET);
+            const service = await this.servicesService.findById(payload.service_id);
 
             if (service) {
-                if (req.user.id === service.client.id) {
-                    return {
+                if (req.user.id === parseInt(payload.client_id)) {
+                    res.status(HttpStatus.OK).send({
                         ...service
-                    }
+                    })
                 } else {
                     res.status(HttpStatus.FORBIDDEN).send({
                         message: 'That service is not yours.'
@@ -124,7 +125,7 @@ export class ServicesController {
                     message: 'Service has not been found.'
                 });
             }
-        } catch {
+        } catch(e) {
             res.status(HttpStatus.BAD_REQUEST).send({
                 message: 'A problem probably occurred with the token.'
             });

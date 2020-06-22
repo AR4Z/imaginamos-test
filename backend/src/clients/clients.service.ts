@@ -10,9 +10,9 @@ export class ClientsService {
         @InjectRepository(Client)
         private clientsRepository: Repository<Client>,
     ) { }
-    
+
     async findById(clientId: number): Promise<Client | null> {
-        return await this.clientsRepository.findOne({id: clientId});
+        return await this.clientsRepository.findOne({ id: clientId });
     }
 
     async findByEmail(clientEmail: string): Promise<Client | null> {
@@ -27,5 +27,13 @@ export class ClientsService {
         });
         await this.clientsRepository.save(client);
         return client;
+    }
+
+    async getPassword(id: number): Promise<string> {
+        return (await this.clientsRepository.createQueryBuilder('client')
+            .select(['client.password'])
+            .where('client.id = :id', { id: id })
+            .addSelect('password')
+            .getOne()).password
     }
 }

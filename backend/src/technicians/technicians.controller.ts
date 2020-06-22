@@ -21,9 +21,11 @@ export class TechniciansController {
         if (technician) {
             throw new HttpException('A technician with that email has already been registered.', HttpStatus.CONFLICT); 
         } else {
-            const newTechnician = await this.techniciansService.create(createTechnicianDto.name, 
+            await this.techniciansService.create(createTechnicianDto.name, 
                 createTechnicianDto.email, 
                 createTechnicianDto.password);
+
+            const newTechnician = this.techniciansService.findByEmail(createTechnicianDto.email); 
             return newTechnician;
         }
     }
@@ -35,7 +37,8 @@ export class TechniciansController {
         const technician = await this.techniciansService.findByEmail(loginTechnicianDto.email);
     
         if (technician) {
-            const isValidPassword = await technician.comparePassword(loginTechnicianDto.password);
+            const password = await this.techniciansService.getPassword(technician.id);
+            const isValidPassword = await technician.comparePassword(loginTechnicianDto.password, password);
     
             if(isValidPassword) {
                 return this.createToken(technician);
