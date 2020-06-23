@@ -25,8 +25,10 @@ export class ServicesService {
 
     // find a service by id
     async findById(id: number): Promise<Service> {
-        const service = await this.servicesRepository.findOne({ id: id });
-        console.log(service);
+        const service = await this.servicesRepository.createQueryBuilder('service')
+            .innerJoinAndSelect('service.technician', 'technician')
+            .where('service.id = :id', {id: id}).getOne();
+
         return service;
     }
 
