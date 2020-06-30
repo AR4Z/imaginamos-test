@@ -1,4 +1,4 @@
-# Prueba Imaginamos
+# Prueba
 
 ## Prerrequisitos
 * Docker
